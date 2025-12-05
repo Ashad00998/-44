@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronos Elite — Искусство времени</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        :root {
+            --primary: #0F0F1E;
+            --secondary: #8B7355;
+            --accent: #2A2A3E;
+            --light: #F8F5F0;
+            --text: #E8E6E1;
+            --text-light: #A8A6A1;
+            --gradient: linear-gradient(135deg, #8B7355 0%, #D4B483 50%, #F5E6D3 100%);
+            --gradient-dark: linear-gradient(135deg, #0F0F1E 0%, #2A2A3E 100%);
+            --gold: #D4B483;
+            --beige: #F5E6D3;
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            --shadow-light: 0 10px 30px rgba(139, 115, 85, 0.2);
+        }
+
+        body {
+            background: var(--gradient-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Видео фон только для главной */
+        #video-bg-home {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            object-fit: cover;
+            filter: brightness(0.3) saturate(1.2);
+            display: block;
+        }
+
+        .other-page-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: var(--gradient-dark);
+        }
+
+        /* Glass Effect */
+        .glass {
+            background: rgba(15, 15, 30, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(139, 115, 85, 0.2);
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 25px 0;
+            background: rgba(15, 15, 30, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-icon:before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex;
+            gap: 5px;
+            background: rgba(42, 42, 62, 0.6);
+            padding: 8px;
+            border-radius: 50px;
+        }
+
+        .nav-item {
+            padding: 15px 30px;
+            text-decoration: none;
+            color: var(--text-light);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient);
+            transition: left 0.4s ease;
+            z-index: -1;
+        }
+
+        .nav-item:hover:before,
+        .nav-item.active:before {
+            left: 0;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            color: #0F0F1E;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+        }
+
+        .nav-item i {
+            font-size: 16px;
+        }
+
+        /* Cart Icon */
+        .cart-icon {
+            position: relative;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(42, 42, 62, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .cart-icon:hover {
+            background: var(--gradient);
+            transform: scale(1.1);
+        }
+
+        .cart-icon i {
+            font-size: 22px;
+            color: var(--gold);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 25px;
+            height: 25px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Pages */
+        .page {
+            display: none;
+            min-height: 100vh;
+            animation: pageFade 0.6s ease;
+            position: relative;
+        }
+
+        @keyframes pageFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Hero Section (только для главной) */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding: 0 40px;
+        }
+
+        .hero-content {
+    max-width: 800px;
+    position: relative;
+    z-index: 2;
+    padding: 60px;
+    background: rgba(15, 15, 30, 0); /* Прозрачный фон */
+    backdrop-filter: none; /* Убираем размытие */
+    border-radius: 40px;
+    border: 1px solid rgba(139, 115, 85, 0); /* Прозрачная граница */
+    box-shadow: none; /* Убираем тень */
+}
+
+        .hero-title {
+            font-size: 5.5rem;
+            font-weight: 300;
+            line-height: 1;
+            margin-bottom: 30px;
+            letter-spacing: 3px;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+        }
+
+        .hero-subtitle {
+            font-size: 1.4rem;
+            color: var(--beige);
+            margin-bottom: 50px;
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            padding: 22px 50px;
+            background: var(--gradient);
+            color: #0F0F1E;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-light);
+        }
+
+        .btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .btn:hover:before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 30px 60px rgba(139, 115, 85, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: var(--gradient);
+            color: #0F0F1E;
+            border-color: transparent;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        /* Page Sections (для всех остальных страниц) */
+        .page-section {
+            padding: 180px 0 100px;
+        }
+
+        .section-title {
+            font-size: 4.5rem;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 30px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            position: relative;
+            padding-bottom: 30px;
+        }
+
+        .section-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 4px;
+            background: var(--gradient);
+            border-radius: 2px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.3rem;
+            color: var(--beige);
+            max-width: 700px;
+            margin: 0 auto 100px;
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        /* Watches Grid */
+        .watches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 50px;
+            margin: 80px 0;
+        }
+
+        .watch-card {
+            background: linear-gradient(145deg, rgba(42, 42, 62, 0.8), rgba(15, 15, 30, 0.9));
+            border-radius: 30px;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border: 1px solid rgba(139, 115, 85, 0.3);
+            box-shadow: var(--shadow);
+        }
+
+        .watch-card:hover {
+            transform: translateY(-20px) scale(1.02);
+            border-color: var(--gold);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        .watch-image {
+            height: 380px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .watch-image:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 60%, rgba(15, 15, 30, 0.8));
+            z-index: 1;
+        }
+
+        .watch-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .watch-card:hover .watch-image img {
+            transform: scale(1.15);
+        }
+
+        .watch-badge {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: var(--gradient);
+            color: #0F0F1E;
+            padding: 12px 25px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            border-radius: 25px;
+            z-index: 2;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .watch-info {
+            padding: 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .watch-brand {
+            color: var(--gold);
+            font-size: 14px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .watch-name {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            line-height: 1.3;
+            color: var(--light);
+        }
+
+        .watch-price {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .watch-price:before {
+            content: '$';
+            font-size: 24px;
+            color: var(--text-light);
+        }
+
+        .watch-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 35px;
+        }
+
+        .feature-tag {
+            background: rgba(139, 115, 85, 0.15);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: var(--beige);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(139, 115, 85, 0.3);
+        }
+
+        .watch-actions {
+            display: flex;
+            gap: 20px;
+        }
+
+        .watch-actions .btn {
+            flex: 1;
+            justify-content: center;
+            padding: 18px 0;
+        }
+
+        /* Brands Grid */
+        .brands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-top: 100px;
+        }
+
+        .brand-card {
+            background: linear-gradient(145deg, rgba(42, 42, 62, 0.8), rgba(15, 15, 30, 0.9));
+            border-radius: 25px;
+            padding: 60px 40px;
+            text-align: center;
+            transition: all 0.4s ease;
+            border: 1px solid rgba(139, 115, 85, 0.3);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .brand-card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: var(--gradient);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .brand-card:hover:before {
+            transform: scaleX(1);
+        }
+
+        .brand-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            border-color: var(--gold);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .brand-icon {
+            font-size: 60px;
+            color: var(--gold);
+            margin-bottom: 30px;
+            height: 70px;
+            filter: drop-shadow(0 10px 20px rgba(139, 115, 85, 0.3));
+        }
+
+        .brand-name {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--light);
+        }
+
+        .brand-desc {
+            color: var(--text-light);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        /* Product Modal */
+        .product-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 15, 30, 0.98);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: modalFade 0.4s ease;
+        }
+
+        @keyframes modalFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .product-content {
+            background: linear-gradient(145deg, #1A1A2E, #0F0F1E);
+            border-radius: 40px;
+            width: 90%;
+            max-width: 1400px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            border: 1px solid rgba(139, 115, 85, 0.4);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        .product-close {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: rgba(42, 42, 62, 0.8);
+            border: 2px solid rgba(139, 115, 85, 0.4);
+            border-radius: 50%;
+            color: var(--gold);
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .product-close:hover {
+            background: var(--gradient);
+            color: #0F0F1E;
+            border-color: transparent;
+            transform: rotate(90deg) scale(1.1);
+        }
+
+        .product-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            padding: 80px;
+        }
+
+        /* Video Viewer */
+        .video-viewer {
+            height: 550px;
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+            box-shadow: var(--shadow);
+        }
+
+        .video-viewer video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .video-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(42, 42, 62, 0.9);
+            border: 2px solid rgba(139, 115, 85, 0.4);
+            border-radius: 50%;
+            color: var(--gold);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-btn:hover {
+            background: var(--gradient);
+            color: #0F0F1E;
+            border-color: transparent;
+            transform: scale(1.1);
+        }
+
+        /* Product Details */
+        .product-details h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            line-height: 1.1;
+            color: var(--light);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .product-brand {
+            color: var(--gold);
+            font-size: 16px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .product-price {
+            font-size: 3.5rem;
+            font-weight: 300;
+            color: var(--gold);
+            margin: 40px 0;
+            display: flex;
+            align-items: baseline;
+            gap: 20px;
+        }
+
+        .product-price span {
+            font-size: 2rem;
+            color: var(--text-light);
+            text-decoration: line-through;
+        }
+
+        .product-description {
+            color: var(--beige);
+            font-size: 1.2rem;
+            line-height: 1.9;
+            margin-bottom: 50px;
+        }
+
+        .product-specs {
+            margin: 50px 0;
+            padding: 40px;
+            background: rgba(42, 42, 62, 0.5);
+            border-radius: 20px;
+            border: 1px solid rgba(139, 115, 85, 0.3);
+        }
+
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 18px 0;
+            border-bottom: 1px solid rgba(139, 115, 85, 0.2);
+        }
+
+        .spec-item:last-child {
+            border-bottom: none;
+        }
+
+        .spec-label {
+            color: var(--text-light);
+            font-size: 15px;
+        }
+
+        .spec-value {
+            color: var(--light);
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 25px;
+            margin-top: 60px;
+        }
+
+        .product-actions .btn {
+            flex: 1;
+            justify-content: center;
+            padding: 22px 0;
+        }
+
+        /* Cart Modal */
+        .cart-modal {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 500px;
+            height: 100%;
+            background: linear-gradient(145deg, #1A1A2E, #0F0F1E);
+            z-index: 2000;
+            transform: translateX(100%);
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 1px solid rgba(139, 115, 85, 0.4);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -20px 0 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .cart-modal.active {
+            transform: translateX(0);
+        }
+
+        .cart-header {
+            padding: 40px;
+            border-bottom: 1px solid rgba(139, 115, 85, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cart-title {
+            font-size: 28px;
+            font-weight: 300;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: var(--light);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+        }
+
+        .cart-item {
+            display: flex;
+            gap: 25px;
+            padding: 30px 0;
+            border-bottom: 1px solid rgba(139, 115, 85, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .cart-item:hover {
+            transform: translateX(10px);
+        }
+
+        .cart-item-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 2px solid rgba(139, 115, 85, 0.3);
+        }
+
+        .cart-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .cart-item-details {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: var(--light);
+        }
+
+        .cart-item-price {
+            color: var(--gold);
+            font-weight: 600;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .cart-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .quantity-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(42, 42, 62, 0.8);
+            border: 2px solid rgba(139, 115, 85, 0.4);
+            border-radius: 50%;
+            color: var(--gold);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quantity-btn:hover {
+            background: var(--gradient);
+            color: #0F0F1E;
+            border-color: transparent;
+        }
+
+        .cart-quantity {
+            font-weight: 600;
+            font-size: 18px;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .remove-item {
+            background: none;
+            border: none;
+            color: #FF6B6B;
+            cursor: pointer;
+            font-size: 14px;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .remove-item:hover {
+            color: #FF8E8E;
+        }
+
+        .cart-footer {
+            padding: 40px;
+            border-top: 1px solid rgba(139, 115, 85, 0.3);
+            background: rgba(15, 15, 30, 0.8);
+        }
+
+        .cart-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 28px;
+            font-weight: 300;
+            margin-bottom: 40px;
+            color: var(--light);
+        }
+
+        .cart-total span {
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 120px;
+            right: 50px;
+            padding: 25px 35px;
+            background: linear-gradient(135deg, #8B7355, #D4B483);
+            color: #0F0F1E;
+            border-radius: 20px;
+            font-weight: 600;
+            z-index: 3000;
+            transform: translateX(150%) translateY(-20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            max-width: 450px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(139, 115, 85, 0.4);
+        }
+
+        .notification.show {
+            transform: translateX(0) translateY(0);
+        }
+
+        /* About Page */
+        .about-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 60px;
+            background: linear-gradient(145deg, rgba(42, 42, 62, 0.8), rgba(15, 15, 30, 0.9));
+            border-radius: 40px;
+            border: 1px solid rgba(139, 115, 85, 0.3);
+            box-shadow: var(--shadow);
+        }
+
+        .about-text {
+            font-size: 1.3rem;
+            line-height: 1.9;
+            color: var(--beige);
+            margin-bottom: 40px;
+        }
+
+        .about-text p {
+            margin-bottom: 30px;
+        }
+
+        /* Delivery Page */
+        .delivery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 50px;
+            margin-top: 80px;
+        }
+
+        .delivery-card {
+            background: linear-gradient(145deg, rgba(42, 42, 62, 0.8), rgba(15, 15, 30, 0.9));
+            border-radius: 30px;
+            padding: 50px 40px;
+            border: 1px solid rgba(139, 115, 85, 0.3);
+            transition: all 0.4s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .delivery-card:hover {
+            transform: translateY(-15px);
+            border-color: var(--gold);
+        }
+
+        /* Reviews Page */
+        .reviews-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px;
+            background: linear-gradient(145deg, rgba(42, 42, 62, 0.8), rgba(15, 15, 30, 0.9));
+            border-radius: 40px;
+            border: 1px solid rgba(139, 115, 85, 0.3);
+            box-shadow: var(--shadow);
+        }
+
+        .review-form {
+            margin-top: 60px;
+        }
+
+        .form-group {
+            margin-bottom: 35px;
+        }
+        /* Footer */
+footer {
+    background: rgba(15, 15, 30, 0.9);
+    border-top: 1px solid rgba(139, 115, 85, 0.2);
+    padding: 40px 0;
+    margin-top: 100px;
+    position: relative;
+    z-index: 100;
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
+    text-align: center;
+}
+
+.footer-copyright {
+    color: var(--text-light);
+    font-size: 14px;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+}
+
+.footer-notice {
+    color: var(--text-light);
+    font-size: 13px;
+    margin-bottom: 20px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+}
+
+.footer-link {
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 1px;
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.footer-link:hover {
+    color: var(--beige);
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .footer-links {
+        gap: 20px;
+    }
+    
+    .footer-content {
+        padding: 0 20px;
+    }
+}
+
+        .form-control {
+            width: 100%;
+            padding: 20px 25px;
+            background: rgba(42, 42, 62, 0.6);
+            border: 2px solid rgba(139, 115, 85, 0.3);
+            border-radius: 15px;
+            color: var(--light);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--gold);
+            background: rgba(42, 42, 62, 0.8);
+            box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.2);
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .rating-star {
+            font-size: 28px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .rating-star.active {
+            color: var(--gold);
+            transform: scale(1.2);
+        }
+
+        /* Featured on Home */
+        .featured-section {
+            padding: 100px 0;
+            background: linear-gradient(to bottom, transparent, rgba(15, 15, 30, 0.9));
+            position: relative;
+            margin-top: -50px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(42, 42, 62, 0.6);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient);
+            border-radius: 6px;
+            border: 2px solid rgba(15, 15, 30, 0.8);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #D4B483, #8B7355);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .hero-title {
+                font-size: 4.5rem;
+            }
+            
+            .product-body {
+                grid-template-columns: 1fr;
+                gap: 60px;
+            }
+            
+            .video-viewer {
+                height: 500px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .nav {
+                display: none;
+            }
+            
+            .watches-grid {
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            }
+            
+            .hero-content {
+                margin: 0 auto;
+                text-align: center;
+                padding: 40px 30px;
+            }
+            
+            .product-body {
+                padding: 60px 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 3.5rem;
+            }
+            
+            .section-title {
+                font-size: 3rem;
+            }
+            
+            .btn {
+                padding: 20px 40px;
+            }
+            
+            .cart-modal {
+                width: 100%;
+            }
+            
+            .product-body {
+                padding: 40px 30px;
+            }
+            
+            .header-container {
+                padding: 0 20px;
+            }
+            
+            .container {
+                padding: 0 20px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .hero-title {
+                font-size: 2.8rem;
+            }
+            
+            .watches-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .watch-actions {
+                flex-direction: column;
+            }
+            
+            .product-details h1 {
+                font-size: 3rem;
+            }
+            
+            .hero-content {
+                padding: 30px 20px;
+            }
+        }
+
+        /* Floating Elements for home only */
+        .floating-element {
+            position: absolute;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .floating-1 {
+            top: 20%;
+            left: 10%;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, rgba(139, 115, 85, 0.1), transparent);
+            border-radius: 50%;
+            filter: blur(20px);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .floating-2 {
+            bottom: 30%;
+            right: 15%;
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(135deg, transparent, rgba(212, 180, 131, 0.1));
+            border-radius: 50%;
+            filter: blur(30px);
+            animation: float 25s infinite ease-in-out reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(120deg); }
+            66% { transform: translateY(30px) rotate(240deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Video Background only for home -->
+    <video autoplay muted loop class="video-background" id="video-bg-home">
+        <source src="Фото/807df81fad7c756b54ef204412fcc3e6.mp4" type="video/mp4">
+    </video>
+
+    <!-- Background for other pages -->
+    <div class="other-page-bg" id="other-page-bg" style="display: none;"></div>
+
+    <!-- Floating Elements only for home -->
+    <div class="floating-element floating-1" id="floating-1"></div>
+    <div class="floating-element floating-2" id="floating-2"></div>
+
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="header-container">
+            <a href="#" class="logo" onclick="showPage('home')">
+                <div class="logo-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <span class="logo-text">CHRONOS ELITE</span>
+            </a>
+
+            <nav class="nav">
+                <button class="nav-item active" onclick="showPage('home')">
+                    <i class="fas fa-home"></i>
+                    Главная
+                </button>
+                <button class="nav-item" onclick="showPage('collections')">
+                    <i class="fas fa-gem"></i>
+                    Коллекции
+                </button>
+                <button class="nav-item" onclick="showPage('brands')">
+                    <i class="fas fa-crown"></i>
+                    Бренды
+                </button>
+                <button class="nav-item" onclick="showPage('about')">
+                    <i class="fas fa-info-circle"></i>
+                    О нас
+                </button>
+                <button class="nav-item" onclick="showPage('delivery')">
+                    <i class="fas fa-shipping-fast"></i>
+                    Доставка
+                </button>
+                <button class="nav-item" onclick="showPage('reviews')">
+                    <i class="fas fa-star"></i>
+                    Отзывы
+                </button>
+            </nav>
+
+            <div class="cart-icon" id="cart-toggle">
+                <i class="fas fa-shopping-bag"></i>
+                <div class="cart-count" id="cart-count">0</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Pages -->
+    <!-- Home Page -->
+    <div class="page active" id="home-page">
+        <section class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    ВЕЧНОСТЬ<br>ВО ВРЕМЕНИ
+                </h1>
+                <p class="hero-subtitle">
+                    Откройте мир исключительных часов, где каждая деталь — произведение искусства, 
+                    а каждое мгновение обретает вечность. Мы предлагаем тщательно отобранную 
+                    коллекцию роскошных часов от ведущих мировых брендов.
+                </p>
+                <div style="display: flex; gap: 25px; flex-wrap: wrap; justify-content: center;">
+                    <button class="btn" onclick="showPage('collections')">
+                        <i class="fas fa-gem"></i>
+                        Исследовать коллекцию
+                    </button>
+                    <button class="btn btn-outline" onclick="showPage('brands')">
+                        <i class="fas fa-crown"></i>
+                        Посмотреть бренды
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Watches on Home -->
+        <section class="featured-section">
+            <div class="container">
+                <h2 class="section-title">ИЗБРАННЫЕ МОДЕЛИ</h2>
+                <p class="section-subtitle">
+                    Самые популярные и эксклюзивные модели из нашей коллекции
+                </p>
+                
+                <div class="watches-grid" id="featured-watches">
+                    <!-- Featured watches will be loaded here -->
+                </div>
+                
+                <div style="text-align: center; margin-top: 80px;">
+                    <button class="btn" onclick="showPage('collections')" style="padding: 25px 60px;">
+                        <i class="fas fa-arrow-right"></i>
+                        Смотреть все коллекции
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Collections Page -->
+    <div class="page" id="collections-page">
+        <section class="page-section">
+            <div class="container">
+                <h2 class="section-title">КОЛЛЕКЦИИ</h2>
+                <p class="section-subtitle">
+                    Тщательно отобранные шедевры часового искусства от ведущих мировых мануфактур
+                </p>
+                
+                <div class="watches-grid" id="watches-container">
+                    <!-- Watches will be loaded here -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Brands Page -->
+    <div class="page" id="brands-page">
+        <section class="page-section">
+            <div class="container">
+                <h2 class="section-title">БРЕНДЫ</h2>
+                <p class="section-subtitle">
+                    Сотрудничаем только с самыми уважаемыми часовыми мануфактурами мира
+                </p>
+                
+                <div class="brands-grid" id="brands-container">
+                    <!-- Brands will be loaded here -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- About Page -->
+    <div class="page" id="about-page">
+        <section class="page-section">
+            <div class="container">
+                <h2 class="section-title">О НАС</h2>
+                
+                <div class="about-content">
+                    <div class="about-text">
+                        <p><strong>Chronos Elite</strong> — это не просто магазин часов, это место, где встречаются традиции, инновации и искусство часового дела. Мы предлагаем тщательно отобранную коллекцию роскошных часов от ведущих мировых брендов.</p>
+                        
+                        <p>Наша команда экспертов поможет вам подобрать идеальные часы, которые станут не просто аксессуаром, а отражением вашего стиля и статуса. Мы гарантируем подлинность каждой модели и предоставляем официальную гарантию от производителей.</p>
+                        
+                        <p>Каждые часы в нашей коллекции — это результат многолетней работы мастеров, сочетание передовых технологий и вековых традиций часового искусства.</p>
+                        
+                        <p>С 2003 года мы создаем историю вместе с нашими клиентами, предлагая только лучшее из мира часового искусства.</p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 25px; justify-content: center; margin-top: 60px; flex-wrap: wrap;">
+                        <button class="btn" onclick="showPage('collections')">
+                            <i class="fas fa-gem"></i>
+                            Смотреть коллекции
+                        </button>
+                        <button class="btn btn-outline" onclick="showPage('reviews')">
+                            <i class="fas fa-star"></i>
+                            Читать отзывы
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Delivery Page -->
+    <div class="page" id="delivery-page">
+        <section class="page-section">
+            <div class="container">
+                <h2 class="section-title">ДОСТАВКА И ОПЛАТА</h2>
+                
+                <div class="delivery-grid">
+                    <div class="delivery-card">
+                        <h3 style="color: var(--gold); margin-bottom: 30px; font-size: 28px;">
+                            <i class="fas fa-shipping-fast"></i> Доставка
+                        </h3>
+                        <div style="color: var(--beige); line-height: 1.9; font-size: 17px;">
+                            <p><strong>По Москве:</strong> 1-2 рабочих дня, 500 руб.</p>
+                            <p><strong>По России:</strong> 3-7 рабочих дней, 800 руб.</p>
+                            <p><strong>Экспресс-доставка:</strong> 1-3 дня, 1500 руб.</p>
+                            <p><strong>Самовывоз:</strong> г. Москва, ул. Тверская, д. 10</p>
+                            <p><strong>Международная:</strong> 7-14 дней, от 3000 руб.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="delivery-card">
+                        <h3 style="color: var(--gold); margin-bottom: 30px; font-size: 28px;">
+                            <i class="fas fa-credit-card"></i> Оплата
+                        </h3>
+                        <div style="color: var(--beige); line-height: 1.9; font-size: 17px;">
+                            <p><strong>Банковские карты:</strong> Visa, Mastercard, МИР</p>
+                            <p><strong>Онлайн оплата:</strong> через защищенный шлюз</p>
+                            <p><strong>Наличные:</strong> при получении заказа</p>
+                            <p><strong>Рассрочка:</strong> от 0% на 12 месяцев</p>
+                            <p><strong>Криптовалюта:</strong> Bitcoin, Ethereum</p>
+                        </div>
+                    </div>
+                    
+                    <div class="delivery-card">
+                        <h3 style="color: var(--gold); margin-bottom: 30px; font-size: 28px;">
+                            <i class="fas fa-shield-alt"></i> Гарантии
+                        </h3>
+                        <div style="color: var(--beige); line-height: 1.9; font-size: 17px;">
+                            <p>✅ Официальная гарантия 2-5 лет</p>
+                            <p>✅ Бесплатный сервис в течение года</p>
+                            <p>✅ Страхование доставки на 100%</p>
+                            <p>✅ Возврат в течение 14 дней</p>
+                            <p>✅ Аутентификация каждой модели</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Reviews Page -->
+    <div class="page" id="reviews-page">
+        <section class="page-section">
+            <div class="container">
+                <h2 class="section-title">ОТЗЫВЫ</h2>
+                
+                <div class="reviews-container">
+                    <div style="color: var(--beige); line-height: 1.9; margin-bottom: 40px; font-size: 18px;">
+                        <p>Мы ценим каждого клиента и стремимся к совершенству в обслуживании. Ваши отзывы помогаем нам становиться лучше.</p>
+                    </div>
+                    
+                    <div class="review-form">
+                        <h3 style="color: var(--gold); margin-bottom: 40px; font-size: 28px;">
+                            Оставить отзыв
+                        </h3>
+                        
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="review-name" placeholder="Ваше имя">
+                        </div>
+                        
+                        <div class="form-group">
+                            <textarea class="form-control" id="review-text" placeholder="Ваш отзыв" rows="6"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div style="color: var(--text-light); margin-bottom: 20px;">Оценка:</div>
+                            <div class="rating-stars" id="rating-stars">
+                                <i class="fas fa-star rating-star" data-rating="1"></i>
+                                <i class="fas fa-star rating-star" data-rating="2"></i>
+                                <i class="fas fa-star rating-star" data-rating="3"></i>
+                                <i class="fas fa-star rating-star" data-rating="4"></i>
+                                <i class="fas fa-star rating-star" data-rating="5"></i>
+                            </div>
+                        </div>
+                        
+                        <button class="btn" onclick="submitReview()" style="width: 100%; padding: 25px;">
+                            <i class="fas fa-paper-plane"></i>
+                            Отправить отзыв
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="product-modal" id="product-modal">
+        <div class="product-content">
+            <button class="product-close" id="product-close">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="product-body" id="product-body">
+                <!-- Product content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="cart-modal" id="cart-modal">
+        <div class="cart-header">
+            <h2 class="cart-title">
+                <i class="fas fa-shopping-bag"></i>
+                Корзина
+            </h2>
+            <button class="product-close" id="cart-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Cart items will be loaded here -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Итого:</span>
+                <span id="cart-total-price">$0</span>
+            </div>
+            <button class="btn" id="checkout-btn" style="width: 100%; padding: 25px;">
+                <i class="fas fa-credit-card"></i>
+                Оформить заказ
+            </button>
+        </div>
+    </div>
+<!-- Footer -->
+<footer>
+    <div class="footer-content">
+        <div class="footer-copyright">
+            <i class="fas fa-copyright"></i> 2024 CHRONOS ELITE. ВСЕ ПРАВА ЗАЩИЩЕНЫ.
+        </div>
+        <div class="footer-notice">
+            Весь контент на этом сайте, включая тексты, изображения, графику, логотипы и видео материалы, 
+            является интеллектуальной собственностью CHRONOS ELITE и защищен международными законами 
+            об авторском праве. Любое копирование, распространение или использование материалов без 
+            письменного разрешения запрещено.
+        </div>
+        <div class="footer-links">
+            <a href="#" class="footer-link">
+                <i class="fas fa-file-contract"></i> Политика конфиденциальности
+            </a>
+            <a href="#" class="footer-link">
+                <i class="fas fa-balance-scale"></i> Условия использования
+            </a>
+            <a href="#" class="footer-link">
+                <i class="fas fa-envelope"></i> Контакты
+            </a>
+        </div>
+    </div>
+</footer>
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-text"></span>
+    </div>
+    
+
+    <script>
+        // Данные часов
+        const watches = [
+            {
+                id: 1,
+                brand: "Rolex",
+                name: "Submariner Date",
+                price: 12800,
+                oldPrice: 14500,
+                image: "https://img.chrono24.com/images/uhren/39531489-3oh7cf22pwifbvrfn6hm1fna-ExtraLarge.jpg",
+                video: "Фото/88adf7195114236390061dc2c78a79c0.mp4",
+                description: "Икона стиля и функциональности. Автоматический механизм Rolex Calibre 3235, водонепроницаемость 300 м и узнаваемый дизайн, который не меняется десятилетиями. Эти часы прошли испытания в самых экстремальных условиях.",
+                badge: "Bestseller",
+                features: ["300м водонепроницаемость", "Автоматический механизм", "Сапфировое стекло", "Хронограф", "Керамический безель"],
+                specs: {
+                    "Механизм": "Rolex Calibre 3235",
+                    "Запас хода": "70 часов",
+                    "Водонепроницаемость": "300 метров",
+                    "Материал корпуса": "Нержавеющая сталь Oystersteel",
+                    "Стекло": "Сапфировое, циклоп",
+                    "Гарантия": "5 лет"
+                },
+                featured: true
+            },
+            {
+                id: 2,
+                brand: "Omega",
+                name: "Speedmaster Moonwatch Professional",
+                price: 8250,
+                oldPrice: 9500,
+                image: "https://img.chrono24.com/images/uhren/42683352-6fvyszohqvbm4v25yyg2wos4-ExtraLarge.jpg",
+                video: "Фото/822faad07f776ccfa56265d6b3528904_720w.mp4",
+                description: "Легендарные хронографы, которые NASA выбрало для всех пилотируемых космических миссий. Механизм с ручным заводом и фирменным циферблатом. Эти часы побывали на Луне и продолжают быть символом исследования космоса.",
+                badge: "Limited Edition",
+                features: ["Космические часы", "Хронограф", "Ручной завод", "Сапфировое стекло", "Историческая модель"],
+                specs: {
+                    "Механизм": "Omega Calibre 3861",
+                    "Запас хода": "50 часов",
+                    "Водонепроницаемость": "50 метров",
+                    "Материал корпуса": "Нержавеющая сталь",
+                    "Стекло": "Сапфировое, хешированное",
+                    "Гарантия": "5 лет"
+                },
+                featured: true
+            },
+            {
+                id: 3,
+                brand: "Patek Philippe",
+                name: "Nautilus 5711/1A",
+                price: 45000,
+                oldPrice: 52000,
+                image: "https://gmt-club.ru/upload/iblock/509/50904ccb39e86136c564f492360242d9.jpg",
+                video: "Фото/3fb195a405c85d9b97dc3ec2806e29fc.mp4",
+                description: "Культовая модель с узнаваемым дизайном корпуса в форме иллюминатора корабля. Автоматический механизм высочайшего качества, ручная отделка каждой детали. Эти часы считаются одними из самых желанных в мире.",
+                badge: "Luxury",
+                features: ["Стальной корпус", "Эксклюзивный дизайн", "Механизм ручной сборки", "Гильошированный циферблат", "Интегрированный браслет"],
+                specs: {
+                    "Механизм": "Patek Philippe Calibre 26-330 S C",
+                    "Запас хода": "45 часов",
+                    "Водонепроницаемость": "120 метров",
+                    "Материал корпуса": "Нержавеющая сталь",
+                    "Стекло": "Сапфировое, антибликовое",
+                    "Гарантия": "Пожизненная"
+                },
+                featured: true
+            },
+            {
+                id: 4,
+                brand: "Audemars Piguet",
+                name: "Royal Oak Chronograph",
+                price: 38500,
+                oldPrice: 42000,
+                image: "https://images.unsplash.com/photo-1623998021453-2c8e5f2f4d6c?w=800&auto=format&fit=crop",
+                video: "https://assets.mixkit.co/videos/preview/mixkit-wristwatch-spinning-in-the-air-43802-large.mp4",
+                description: "Легендарная модель с фирменным дизайном «таписери» и хронографом. Инновационные материалы сочетаются с традиционным часовым искусством. Корпус из керамики и стали.",
+                badge: "New",
+                features: ["Хронограф", "Сталь и керамика", "Скелетонизированный механизм", "Таписери циферблат", "Интегрированный браслет"],
+                specs: {
+                    "Механизм": "Audemars Piguet Calibre 2385",
+                    "Запас хода": "40 часов",
+                    "Водонепроницаемость": "50 метров",
+                    "Материал корпуса": "Сталь и керамика",
+                    "Стекло": "Сапфировое, антибликовое",
+                    "Гарантия": "5 лет"
+                }
+            },
+            {
+                id: 5,
+                brand: "IWC",
+                name: "Portugieser Perpetual Calendar",
+                price: 32500,
+                oldPrice: 38000,
+                image: "https://images.unsplash.com/photo-1551818255-e6e109e9b21a?w=800&auto=format&fit=crop",
+                video: "https://assets.mixkit.co/videos/preview/mixkit-silver-watch-spinning-on-a-dark-surface-43800-large.mp4",
+                description: "Изысканные часы с вечным календарем и лунными фазами. Механизм с 7-дневным запасом хода. Классический дизайн в сочетании с современными технологиями.",
+                badge: "Limited",
+                features: ["Вечный календарь", "Лунные фазы", "7-дневный запас хода", "Ручная отделка", "Кожаный ремешок"],
+                specs: {
+                    "Механизм": "IWC Calibre 52615",
+                    "Запас хода": "168 часов (7 дней)",
+                    "Водонепроницаемость": "30 метров",
+                    "Материал корпуса": "18-каратное розовое золото",
+                    "Стекло": "Сапфировое, выпуклое",
+                    "Гарантия": "8 лет"
+                }
+            },
+            {
+                id: 6,
+                brand: "Tag Heuer",
+                name: "Carrera Chronograph",
+                price: 6200,
+                oldPrice: 7200,
+                image: "https://images.unsplash.com/photo-1547996160-81f58c6a53d8?w=800&auto=format&fit=crop",
+                video: "https://assets.mixkit.co/videos/preview/mixkit-close-up-of-wristwatch-spinning-on-a-table-43803-large.mp4",
+                description: "Культовая модель, вдохновленная автоспортом. Хронограф с тахиметрической шкалой. Современный дизайн с историческими корнями.",
+                badge: "Sport",
+                features: ["Автоспорт", "Хронограф", "Тахиметр", "Сапфировое стекло", "Кожаный ремешок"],
+                specs: {
+                    "Механизм": "Tag Heuer Calibre Heuer 02",
+                    "Запас хода": "80 часов",
+                    "Водонепроницаемость": "100 метров",
+                    "Материал корпуса": "Нержавеющая сталь",
+                    "Стекло": "Сапфировое, антибликовое",
+                    "Гарантия": "2 года"
+                }
+            }
+        ];
+
+        // Данные брендов
+        const brands = [
+            {
+                name: "Rolex",
+                icon: "fas fa-crown",
+                description: "Швейцарские часы, ставшие символом статуса и успеха. Безупречное качество и узнаваемый дизайн."
+            },
+            {
+                name: "Omega",
+                icon: "fas fa-infinity",
+                description: "Инновации и точность с 1848 года. Официальный хронометрист Олимпийских игр и миссий NASA."
+            },
+            {
+                name: "Patek Philippe",
+                icon: "fas fa-anchor",
+                description: "Семейная мануфактура, создающая одни из самых сложных часов в мире. Наследие и эксклюзивность."
+            },
+            {
+                name: "Audemars Piguet",
+                icon: "fas fa-chess-rook",
+                description: "Новаторы в дизайне, создатели культовой модели Royal Oak. Смелые решения и авангард."
+            },
+            {
+                name: "IWC",
+                icon: "fas fa-feather-alt",
+                description: "Швейцарские часы с акцентом на инженерное превосходство и функциональность. Немецкая точность."
+            },
+            {
+                name: "Tag Heuer",
+                icon: "fas fa-compass",
+                description: "Пионеры в области спортивных хронографов и автоспорта. Динамичный дизайн и технологии."
+            }
+        ];
+
+        // Глобальные переменные
+        let cart = [];
+        let currentRating = 0;
+
+        // DOM элементы
+        const pages = {
+            home: document.getElementById('home-page'),
+            collections: document.getElementById('collections-page'),
+            brands: document.getElementById('brands-page'),
+            about: document.getElementById('about-page'),
+            delivery: document.getElementById('delivery-page'),
+            reviews: document.getElementById('reviews-page')
+        };
+
+        const videoBgHome = document.getElementById('video-bg-home');
+        const otherPageBg = document.getElementById('other-page-bg');
+        const floating1 = document.getElementById('floating-1');
+        const floating2 = document.getElementById('floating-2');
+        const navItems = document.querySelectorAll('.nav-item');
+        const watchesContainer = document.getElementById('watches-container');
+        const featuredWatches = document.getElementById('featured-watches');
+        const brandsContainer = document.getElementById('brands-container');
+        const productModal = document.getElementById('product-modal');
+        const productBody = document.getElementById('product-body');
+        const productClose = document.getElementById('product-close');
+        const cartModal = document.getElementById('cart-modal');
+        const cartToggle = document.getElementById('cart-toggle');
+        const cartClose = document.getElementById('cart-close');
+        const cartItems = document.getElementById('cart-items');
+        const cartTotalPrice = document.getElementById('cart-total-price');
+        const cartCount = document.getElementById('cart-count');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+        const ratingStars = document.querySelectorAll('.rating-star');
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            // Загрузить часы и бренды
+            loadWatches();
+            loadFeaturedWatches();
+            loadBrands();
+            
+            // Инициализировать корзину
+            updateCart();
+            
+            // Назначить обработчики событий
+            initEventHandlers();
+            
+            // Настроить звезды рейтинга
+            setupRatingStars();
+            
+            // Показать главную страницу
+            showPage('home');
+        });
+
+        // Настройка звезд рейтинга
+        function setupRatingStars() {
+            ratingStars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const rating = parseInt(star.getAttribute('data-rating'));
+                    setRating(rating);
+                });
+            });
+        }
+
+        // Навигация по страницам
+        function showPage(pageName) {
+            // Скрыть все страницы
+            Object.values(pages).forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Показать выбранную страницу
+            if (pages[pageName]) {
+                pages[pageName].classList.add('active');
+            }
+            
+            // Обновить активную кнопку в навигации
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                const text = item.textContent.trim();
+                if (text.includes(getPageTitle(pageName))) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Прокрутить наверх
+            window.scrollTo(0, 0);
+            
+            // Управление видео-фоном
+            if (pageName === 'home') {
+                videoBgHome.style.display = 'block';
+                otherPageBg.style.display = 'none';
+                floating1.style.display = 'block';
+                floating2.style.display = 'block';
+            } else {
+                videoBgHome.style.display = 'none';
+                otherPageBg.style.display = 'block';
+                floating1.style.display = 'none';
+                floating2.style.display = 'none';
+            }
+        }
+
+        function getPageTitle(pageName) {
+            const titles = {
+                'home': 'Главная',
+                'collections': 'Коллекции',
+                'brands': 'Бренды',
+                'about': 'О нас',
+                'delivery': 'Доставка',
+                'reviews': 'Отзывы'
+            };
+            return titles[pageName] || '';
+        }
+
+        // Загрузка часов
+        function loadWatches() {
+            watchesContainer.innerHTML = '';
+            
+            watches.forEach(watch => {
+                createWatchCard(watch, watchesContainer);
+            });
+        }
+
+        // Загрузка избранных часов на главной
+        function loadFeaturedWatches() {
+            featuredWatches.innerHTML = '';
+            
+            const featured = watches.filter(watch => watch.featured).slice(0, 3);
+            
+            featured.forEach(watch => {
+                createWatchCard(watch, featuredWatches);
+            });
+        }
+
+        // Создание карточки часов
+        function createWatchCard(watch, container) {
+            const watchCard = document.createElement('div');
+            watchCard.className = 'watch-card';
+            watchCard.innerHTML = `
+                <div class="watch-image">
+                    <img src="${watch.image}" alt="${watch.name}" loading="lazy">
+                    ${watch.badge ? `<div class="watch-badge">${watch.badge}</div>` : ''}
+                </div>
+                <div class="watch-info">
+                    <div class="watch-brand">
+                        <i class="fas fa-crown"></i>
+                        ${watch.brand}
+                    </div>
+                    <h3 class="watch-name">${watch.name}</h3>
+                    <div class="watch-price">${watch.price.toLocaleString()}</div>
+                    <div class="watch-features">
+                        ${watch.features.slice(0, 3).map(feature => `
+                            <div class="feature-tag">
+                                <i class="fas fa-check"></i>
+                                ${feature}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="watch-actions">
+                        <button class="btn" onclick="showProductDetails(${watch.id})">
+                            <i class="fas fa-eye"></i>
+                            Подробнее
+                        </button>
+                        <button class="btn btn-outline" onclick="addToCart(${watch.id})">
+                            <i class="fas fa-shopping-bag"></i>
+                            В корзину
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(watchCard);
+        }
+
+        // Загрузка брендов
+        function loadBrands() {
+            brandsContainer.innerHTML = '';
+            
+            brands.forEach(brand => {
+                const brandCard = document.createElement('div');
+                brandCard.className = 'brand-card';
+                brandCard.innerHTML = `
+                    <div class="brand-icon">
+                        <i class="${brand.icon}"></i>
+                    </div>
+                    <h3 class="brand-name">${brand.name}</h3>
+                    <p class="brand-desc">${brand.description}</p>
+                `;
+                
+                brandCard.addEventListener('click', () => {
+                    showBrandWatches(brand.name);
+                    showPage('collections');
+                });
+                brandsContainer.appendChild(brandCard);
+            });
+        }
+
+        // Показать часы бренда
+        function showBrandWatches(brandName) {
+            const filteredWatches = watches.filter(watch => watch.brand === brandName);
+            
+            if (filteredWatches.length === 0) {
+                showNotification('Нет товаров этого бренда');
+                return;
+            }
+            
+            watchesContainer.innerHTML = '';
+            
+            filteredWatches.forEach(watch => {
+                createWatchCard(watch, watchesContainer);
+            });
+            
+            showNotification(`Показаны часы бренда ${brandName}`);
+        }
+
+        // Показать детали товара с видео
+        function showProductDetails(watchId) {
+            const watch = watches.find(w => w.id === watchId);
+            if (!watch) return;
+            
+            productBody.innerHTML = `
+                <div>
+                    <div class="video-viewer">
+                        <video autoplay muted loop controls style="width: 100%; height: 100%; object-fit: cover;">
+                            <source src="${watch.video}" type="video/mp4">
+                            Ваш браузер не поддерживает видео.
+                        </video>
+                        <div class="video-controls">
+                            <button class="video-btn" onclick="togglePlay(this)">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="video-btn" onclick="toggleMute(this)">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                        <div style="background: rgba(42,42,62,0.6); padding: 25px; border-radius: 15px; text-align: center; border: 1px solid rgba(139,115,85,0.3);">
+                            <i class="fas fa-shipping-fast" style="color: var(--gold); font-size: 28px; margin-bottom: 15px;"></i>
+                            <p style="color: var(--beige); font-size: 15px;">Бесплатная доставка</p>
+                        </div>
+                        <div style="background: rgba(42,42,62,0.6); padding: 25px; border-radius: 15px; text-align: center; border: 1px solid rgba(139,115,85,0.3);">
+                            <i class="fas fa-shield-alt" style="color: var(--gold); font-size: 28px; margin-bottom: 15px;"></i>
+                            <p style="color: var(--beige); font-size: 15px;">Гарантия ${watch.specs.Гарантия}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-details">
+                    <div class="product-brand">
+                        <i class="fas fa-crown"></i>
+                        ${watch.brand}
+                    </div>
+                    <h1>${watch.name}</h1>
+                    <div class="product-price">
+                        $${watch.price.toLocaleString()}
+                        ${watch.oldPrice ? `<span>$${watch.oldPrice.toLocaleString()}</span>` : ''}
+                    </div>
+                    <p class="product-description">${watch.description}</p>
+                    
+                    <div class="product-specs">
+                        ${Object.entries(watch.specs).map(([key, value]) => `
+                            <div class="spec-item">
+                                <span class="spec-label">${key}</span>
+                                <span class="spec-value">${value}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="watch-features" style="margin: 40px 0;">
+                        ${watch.features.map(feature => `
+                            <div class="feature-tag">
+                                <i class="fas fa-check"></i>
+                                ${feature}
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="product-actions">
+                        <button class="btn" onclick="addToCart(${watch.id}); productModal.style.display = 'none';">
+                            <i class="fas fa-shopping-bag"></i>
+                            Добавить в корзину
+                        </button>
+                        <button class="btn btn-outline" onclick="buyNow(${watch.id})">
+                            <i class="fas fa-bolt"></i>
+                            Купить сейчас
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            productModal.style.display = 'flex';
+        }
+
+        // Управление видео
+        function togglePlay(button) {
+            const video = button.closest('.video-viewer').querySelector('video');
+            if (video.paused) {
+                video.play();
+                button.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                video.pause();
+                button.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        }
+
+        function toggleMute(button) {
+            const video = button.closest('.video-viewer').querySelector('video');
+            video.muted = !video.muted;
+            button.innerHTML = video.muted ? 
+                '<i class="fas fa-volume-mute"></i>' : 
+                '<i class="fas fa-volume-up"></i>';
+        }
+
+        // Корзина
+        function addToCart(watchId) {
+            const watch = watches.find(w => w.id === watchId);
+            if (!watch) return;
+            
+            const existingItem = cart.find(item => item.id === watchId);
+            
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({
+                    ...watch,
+                    quantity: 1
+                });
+            }
+            
+            updateCart();
+            showNotification(`${watch.name} добавлен в корзину`);
+        }
+
+        function removeFromCart(watchId) {
+            cart = cart.filter(item => item.id !== watchId);
+            updateCart();
+            showNotification('Товар удален из корзины');
+        }
+
+        function updateCart() {
+            // Обновить счетчик
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCount.textContent = totalItems;
+            
+            // Обновить общую сумму
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            cartTotalPrice.textContent = `$${totalPrice.toLocaleString()}`;
+            
+            // Обновить список товаров
+            cartItems.innerHTML = '';
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = `
+                    <div style="text-align: center; padding: 60px 0; color: var(--text-light);">
+                        <i class="fas fa-shopping-bag" style="font-size: 60px; margin-bottom: 25px; opacity: 0.3;"></i>
+                        <p style="font-size: 20px; color: var(--beige); margin-bottom: 15px;">Корзина пуста</p>
+                        <p style="color: var(--text-light);">Добавьте товары из коллекции</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
+                    <div class="cart-item-image">
+                        <img src="${item.image}" alt="${item.name}">
+                    </div>
+                    <div class="cart-item-details">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-price">$${item.price.toLocaleString()}</div>
+                        <div class="cart-item-actions">
+                            <button class="quantity-btn" onclick="updateQuantity(${item.id}, -1)">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span class="cart-quantity">${item.quantity}</span>
+                            <button class="quantity-btn" onclick="updateQuantity(${item.id}, 1)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="remove-item" onclick="removeFromCart(${item.id})">
+                                <i class="fas fa-trash"></i>
+                                Удалить
+                            </button>
+                        </div>
+                    </div>
+                `;
+                cartItems.appendChild(cartItem);
+            });
+        }
+
+        function updateQuantity(watchId, change) {
+            const item = cart.find(item => item.id === watchId);
+            if (!item) return;
+            
+            item.quantity += change;
+            
+            if (item.quantity <= 0) {
+                removeFromCart(watchId);
+            } else {
+                updateCart();
+            }
+        }
+
+        function buyNow(watchId) {
+            addToCart(watchId);
+            cartModal.classList.add('active');
+            productModal.style.display = 'none';
+        }
+
+        // Рейтинг
+        function setRating(rating) {
+            currentRating = rating;
+            ratingStars.forEach(star => {
+                const starRating = parseInt(star.getAttribute('data-rating'));
+                if (starRating <= rating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+
+        // Отзывы
+        function submitReview() {
+            const name = document.getElementById('review-name').value;
+            const text = document.getElementById('review-text').value;
+            
+            if (!name.trim() || !text.trim()) {
+                showNotification('Пожалуйста, заполните все поля');
+                return;
+            }
+            
+            if (currentRating === 0) {
+                showNotification('Пожалуйста, поставьте оценку');
+                return;
+            }
+            
+            // В реальном проекте здесь была бы отправка на сервер
+            showNotification('Спасибо за ваш отзыв!');
+            
+            // Очистить форму
+            document.getElementById('review-name').value = '';
+            document.getElementById('review-text').value = '';
+            setRating(0);
+        }
+
+        // Уведомления
+        function showNotification(message) {
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Обработчики событий
+        function initEventHandlers() {
+            // Закрытие модальных окон
+            productClose.addEventListener('click', () => {
+                productModal.style.display = 'none';
+            });
+            
+            cartToggle.addEventListener('click', () => {
+                cartModal.classList.add('active');
+            });
+            
+            cartClose.addEventListener('click', () => {
+                cartModal.classList.remove('active');
+            });
+            
+            // Закрытие по клику вне модального окна
+            productModal.addEventListener('click', (e) => {
+                if (e.target === productModal) {
+                    productModal.style.display = 'none';
+                }
+            });
+            
+            cartModal.addEventListener('click', (e) => {
+                if (e.target === cartModal) {
+                    cartModal.classList.remove('active');
+                }
+            });
+            
+            // Оформление заказа
+            checkoutBtn.addEventListener('click', () => {
+                if (cart.length === 0) {
+                    showNotification('Добавьте товары в корзину');
+                    return;
+                }
+                
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                
+                cartModal.classList.remove('active');
+                showNotification(`Заказ оформлен! Сумма: $${total.toLocaleString()}`);
+                
+                // Очистить корзину
+                cart = [];
+                updateCart();
+            });
+        }
+
+        // Глобальные функции
+        window.showPage = showPage;
+        window.showProductDetails = showProductDetails;
+        window.addToCart = addToCart;
+        window.removeFromCart = removeFromCart;
+        window.updateQuantity = updateQuantity;
+        window.showBrandWatches = showBrandWatches;
+        window.setRating = setRating;
+        window.submitReview = submitReview;
+        window.buyNow = buyNow;
+        window.togglePlay = togglePlay;
+        window.toggleMute = toggleMute;
+    </script>
+</body>
+</html>
